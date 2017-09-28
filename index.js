@@ -1,9 +1,7 @@
 'use strict';
 
 const Alexa = require('alexa-sdk');
-
 const APP_ID = "";
-
 const APIKEY = "8c31a4878805ea4fe690e48fddbfffe1"
 
 const handlers = {
@@ -24,7 +22,7 @@ const handlers = {
     },
     'getLaundryRoom': function () {
         //TO REMOVE
-        this.attributes['roomID'] = 1394850;
+        //this.attributes['roomID'] = 1394850;
 
         if (this.attributes['roomID'] === undefined) {
             this.emit(":ask", "Please set your laundry room ID before continuing");
@@ -37,31 +35,8 @@ const handlers = {
 
             getWebRequest(url, function(response) {
                 var parseString = require('xml2js').parseString;
-                parseString(response, function (err, result) {
-                    var roomName = result.laundry_room.laundry_room_name;
-                    var machines = result.laundry_room.appliances[0].appliance;
-                    var numMachines = machines.length;
-                    var numWashers = 0;
-                    var numDryers = 0;
-
-                    for (var i = 0; i < numMachines; i++) {
-                        var currMachine = machines[i];
-                        console.log(currMachine);
-                        if (currMachine.status == "Available") {
-                            if (machines[i].appliance_type == "WASHER") {
-                                numWashers++;
-                            } else if (currMachine.appliance_type == "DRYER") {
-                                numDryers++;
-                            } else {
-                                console.log("FOUND BAD MACHINE");
-                            }
-                        }
-                    }
-
-                    var toPrint = "In " + roomName + ", There are " + numWashers +
-                                  " washing machines available and " + numDryers +
-                                  " drying machines available";
-                    caller.emit(":tell", toPrint);
+                parseString(response, function(err, data) {
+                    getMachineData(err, data, caller);
                 });
             });
         }
@@ -89,16 +64,63 @@ exports.handler = function (event, context) {
     alexa.execute();
 };
 
+function getMachineData(err, data, caller) {
+    var roomName = data.laundry_room.laundry_room_name;
+    var machines = data.laundry_room.appliances[0].appliance;
+    var numMachines = machines.length;
+    var numWashers = 0;
+    var numDryers = 0;
+
+    for (var i = 0; i < numMachines; i++) {
+        var currMachine = machines[i];
+        console.log(currMachine);
+        if (currMachine.status == "Available") {
+            if (machines[i].appliance_type == "WASHER") {
+                numWashers++;
+            } else if (currMachine.appliance_type == "DRYER") {
+                numDryers++;
+            } else {
+                console.log("FOUND BAD MACHINE");
+            }
+        }
+    }
+
+    var toPrint = "In " + roomName + ", There are " + numWashers +
+                  " washing machines available and " + numDryers +
+                  " drying machines available";
+    caller.emit(":tell", toPrint);
+}
+
+function allMachines() {
+
+}
+
+function allWashers() {
+
+}
+
+function allDryers() {
+
+}
+
+function availableWashers() {
+
+}
+
+function availableDryers() {
+    
+}
+
 function getWebRequest(url, callback) {
-        var http = require('http');
-        var response = "";
-        http.get(url, function(res) {
-            res.on("data", function(data) {
-                response += data; 
-            });
-            
-            res.on("end", function() {
-                callback(response);
-            })
+    var http = require('http');
+    var response = "";
+    http.get(url, function(res) {
+        res.on("data", function(data) {
+            response += data; 
         });
+        
+        res.on("end", function() {
+            callback(response);
+        })
+    });
 }
