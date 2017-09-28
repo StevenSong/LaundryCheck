@@ -20,23 +20,116 @@ const handlers = {
             this.emit(":tell", "Laundry Room ID set to " + roomID.toString());
         }
     },
-    'getLaundryRoom': function () {
-        //TO REMOVE
+    'getAllMachines': function () {
         //this.attributes['roomID'] = 1394850;
+        var roomID = this.attributes['roomID'];
 
-        if (this.attributes['roomID'] === undefined) {
+        if (roomID === undefined) {
             this.emit(":ask", "Please set your laundry room ID before continuing");
         } else {
-            console.log("getLaundryRoom called with valid room!")
-            
-            var roomID = this.attributes['roomID'];
-            var url = "http://api.laundryview.com/room/?api_key=" + APIKEY + "&method=getAppliances&location=" + roomID.toString();
+            var url = "http://api.laundryview.com/room/?api_key=" + APIKEY +
+                      "&method=getAppliances&location=" + roomID.toString();
             var caller = this;
 
             getWebRequest(url, function(response) {
                 var parseString = require('xml2js').parseString;
                 parseString(response, function(err, data) {
-                    getMachineData(err, data, caller);
+                    allMachines(data, caller);
+                });
+            });
+        }
+    },
+    'getAllWashers': function () {
+        //this.attributes['roomID'] = 1394850;
+        var roomID = this.attributes['roomID'];
+
+        if (roomID === undefined) {
+            this.emit(":ask", "Please set your laundry room ID before continuing");
+        } else {
+            var url = "http://api.laundryview.com/room/?api_key=" + APIKEY +
+                      "&method=getAppliances&location=" + roomID.toString();
+            var caller = this;
+
+            getWebRequest(url, function(response) {
+                var parseString = require('xml2js').parseString;
+                parseString(response, function(err, data) {
+                    allWashers(data, caller);
+                });
+            });
+        }
+    },
+    'getAllDryers': function () {
+        //this.attributes['roomID'] = 1394850;
+        var roomID = this.attributes['roomID'];
+
+        if (roomID === undefined) {
+            this.emit(":ask", "Please set your laundry room ID before continuing");
+        } else {
+            var url = "http://api.laundryview.com/room/?api_key=" + APIKEY +
+                      "&method=getAppliances&location=" + roomID.toString();
+            var caller = this;
+
+            getWebRequest(url, function(response) {
+                var parseString = require('xml2js').parseString;
+                parseString(response, function(err, data) {
+                    allDryers(data, caller);
+                });
+            });
+        }
+    },
+    'getAvailableMachines': function () {
+        //this.attributes['roomID'] = 1394850;
+        var roomID = this.attributes['roomID'];
+
+        if (roomID === undefined) {
+            this.emit(":ask", "Please set your laundry room ID before continuing");
+        } else {
+            var url = "http://api.laundryview.com/room/?api_key=" + APIKEY +
+                      "&method=getAppliances&location=" + roomID.toString();
+            var caller = this;
+
+            getWebRequest(url, function(response) {
+                var parseString = require('xml2js').parseString;
+                parseString(response, function(err, data) {
+                    availableMachines(data, caller);
+                });
+            });
+        }
+    },
+    'getAvailableWashers': function () {
+        //this.attributes['roomID'] = 1394850;
+        var roomID = this.attributes['roomID'];
+
+        if (roomID === undefined) {
+            this.emit(":ask", "Please set your laundry room ID before continuing");
+        } else {
+            var url = "http://api.laundryview.com/room/?api_key=" + APIKEY +
+                      "&method=getAppliances&location=" + roomID.toString();
+            var caller = this;
+
+            getWebRequest(url, function(response) {
+                var parseString = require('xml2js').parseString;
+                parseString(response, function(err, data) {
+                    availableWashers(data, caller);
+                });
+            });
+        }
+    },
+    'getAvailableDryers': function () {
+        //this.attributes['roomID'] = 1394850;
+        var roomID = this.attributes['roomID'];
+
+        if (roomID === undefined) {
+            this.emit(":ask", "Please set your laundry room ID before continuing");
+        } else {
+            var url = "http://api.laundryview.com/room/?api_key=" + APIKEY +
+                      "&method=getAppliances&location=" + roomID.toString();
+            var caller = this;
+
+            getWebRequest(url, function(response) {
+                var parseString = require('xml2js').parseString;
+                parseString(response, function(err, data) {
+                    availableDryers(data, caller);
                 });
             });
         }
@@ -64,23 +157,120 @@ exports.handler = function (event, context) {
     alexa.execute();
 };
 
-function getMachineData(err, data, caller) {
-    var roomName = data.laundry_room.laundry_room_name;
-    var machines = data.laundry_room.appliances[0].appliance;
+function allMachines(data, caller) {
+    var room = data.laundry_room;
+    var roomName = room.laundry_room_name;
+    var machines = room.appliances[0].appliance;
+    var numMachines = machines.length;
+    var numWashers = 0;
+    var numAvailWashers = 0;
+    var numDryers = 0;
+    var numAvailDryers = 0;
+    var numUnknown = 0;
+
+    for (var i = 0; i < numMachines; i++) {
+        if (machines[i].lrm_status == "Offline") {
+            numUnknown++;
+        } else if (machines[i].appliance_type == "WASHER") {
+            numWashers++;
+            if (machines[i].out_of_service == "0" &&
+                machines[i].status == "Available") {
+                numAvailWashers++;
+            }
+        } else if (machines[i].appliance_type == "DRYER") {
+            numDryers++;
+            if (machines[i].out_of_service == "0" &&
+                machines[i].status == "Available") {
+                numAvailDryers++;
+            }
+        }
+    }
+
+    var toPrint = "In " + roomName + ", " + numAvailWashers + " out of " + numWashers +
+                  " washing machines are available and " + numAvailDryers + " out of " + numDryers +
+                  " drying machines are available.";
+    if (numUnknown != 0) {
+        toPrint += " Information on " + numUnknown + " machines was not available.";
+    }
+    caller.emit(":tell", toPrint);
+}
+
+function allWashers(data, caller) {
+    var room = data.laundry_room;
+    var roomName = room.laundry_room_name;
+    var machines = room.appliances[0].appliance;
+    var numMachines = machines.length;
+    var numWashers = 0;
+    var numAvailWashers = 0;
+    var numUnknown = 0;
+
+    for (var i = 0; i < numMachines; i++) {
+        if (machines[i].appliance_type == "WASHER") {
+            if (machines[i].lrm_status == "Offline") {
+                numUnknown++;
+            } else {
+                numWashers++;
+                if (machines[i].status == "Available") {
+                    numAvailWashers++;
+                }
+            }
+        }
+    }
+
+    var toPrint = "In " + roomName + ", " + numAvailWashers + " out of " + numWashers +
+                  " washing machines are available.";
+    if (numUnknown != 0) {
+        toPrint += " Information on " + numUnknown + " washing machines was not available.";
+    }
+    caller.emit(":tell", toPrint);
+}
+
+function allDryers(data, caller) {
+    var room = data.laundry_room;
+    var roomName = room.laundry_room_name;
+    var machines = room.appliances[0].appliance;
+    var numMachines = machines.length;
+    var numDryers = 0;
+    var numAvailDryers = 0;
+    var numUnknown = 0;
+
+    for (var i = 0; i < numMachines; i++) {
+        if (machines[i].appliance_type == "DRYER") {
+            if (machines[i].lrm_status == "Offline") {
+                numUnknown++;
+            } else {
+                numDryers++;
+                if (machines[i].status == "Available") {
+                    numAvailDryers++;
+                }
+            }
+        }
+    }
+
+    var toPrint = "In " + roomName + ", " + numAvailDryers + " out of " + numDryers +
+                  " drying machines are available.";
+    if (numUnknown != 0) {
+        toPrint += " Information on " + numUnknown + " drying machines was not available.";
+    }
+    caller.emit(":tell", toPrint);
+}
+
+function availableMachines(data, caller) {
+    var room = data.laundry_room;
+    var roomName = room.laundry_room_name;
+    var machines = room.appliances[0].appliance;
     var numMachines = machines.length;
     var numWashers = 0;
     var numDryers = 0;
 
     for (var i = 0; i < numMachines; i++) {
-        var currMachine = machines[i];
-        console.log(currMachine);
-        if (currMachine.status == "Available") {
+        if (machines[i].lrm_status == "Online" &&
+            machines[i].out_of_service == "0" &&
+            machines[i].status == "Available") {
             if (machines[i].appliance_type == "WASHER") {
                 numWashers++;
-            } else if (currMachine.appliance_type == "DRYER") {
+            } else if (machines[i].appliance_type == "DRYER") {
                 numDryers++;
-            } else {
-                console.log("FOUND BAD MACHINE");
             }
         }
     }
@@ -91,24 +281,48 @@ function getMachineData(err, data, caller) {
     caller.emit(":tell", toPrint);
 }
 
-function allMachines() {
+function availableWashers(data, caller) {
+    var room = data.laundry_room;
+    var roomName = room.laundry_room_name;
+    var machines = room.appliances[0].appliance;
+    var numMachines = machines.length;
+    var numWashers = 0;
 
+    for (var i = 0; i < numMachines; i++) {
+        if (machines[i].lrm_status == "Online" &&
+            machines[i].out_of_service == "0" &&
+            machines[i].status == "Available") {
+            if (machines[i].appliance_type == "WASHER") {
+                numWashers++;
+            }
+        }
+    }
+
+    var toPrint = "In " + roomName + ", There are " + numWashers +
+                  " washing machines available";
+    caller.emit(":tell", toPrint);
 }
 
-function allWashers() {
+function availableDryers(data, caller) {
+    var room = data.laundry_room;
+    var roomName = room.laundry_room_name;
+    var machines = room.appliances[0].appliance;
+    var numMachines = machines.length;
+    var numDryers = 0;
 
-}
+    for (var i = 0; i < numMachines; i++) {
+        if (machines[i].lrm_status == "Online" &&
+            machines[i].out_of_service == "0" &&
+            machines[i].status == "Available") {
+            if (machines[i].appliance_type == "DRYER") {
+                numDryers++;
+            }
+        }
+    }
 
-function allDryers() {
-
-}
-
-function availableWashers() {
-
-}
-
-function availableDryers() {
-    
+    var toPrint = "In " + roomName + ", There are " + numDryers +
+                  " drying machines available";
+    caller.emit(":tell", toPrint);
 }
 
 function getWebRequest(url, callback) {
