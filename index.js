@@ -6,7 +6,7 @@ const APIKEY = "8c31a4878805ea4fe690e48fddbfffe1"
 
 const handlers = {
     'LaunchRequest': function () {
-        this.emit(":tell", "Welcome to Laundry Check");
+        this.emit(":ask", "Welcome to Laundry Check! You can check the availability of laundry machines for your on campus laundry room. Try asking: \"What machines are available?\"");
         if (this.attributes['roomID'] === null) {
             this.emit(":ask", "Please set your laundry room ID before continuing");
         }
@@ -14,7 +14,7 @@ const handlers = {
     'setLaundryRoom': function () {
         var roomID = parseInt(this.event.request.intent.slots.roomID.value);
         if (isNaN(roomID)) {
-            this.emit(":tell", "no room ID given");
+            this.emit(":ask", "no room ID given");
         } else {
             this.attributes['roomID'] = roomID;
             this.emit(":tell", "Laundry Room ID set to " + roomID.toString());
@@ -135,7 +135,7 @@ const handlers = {
         }
     },
     'AMAZON.HelpIntent': function () {
-        this.emit(':ask', "Would you like to check on the status of a laundry room?");
+        this.emit(':ask', "Ask for the availability of the laundry machines");
     },
     'AMAZON.CancelIntent': function () {
         this.emit(':tell', "Goodbye");
